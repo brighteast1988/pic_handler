@@ -1,4 +1,5 @@
 from zipfile import ZipFile
+import time
 import shutil
 import zipfile
 import os
@@ -9,11 +10,12 @@ from tkinter.filedialog import (askopenfilename,
                                     asksaveasfilename)
 
 filedir = configuration.unzip_path
+ori_dir = configuration.old_path
 filenames_new = []
 filepaths_new = []
 bakup_path = filedir + '/backup'
 unzip_path = filedir + '/unzip'
-
+# 时间戳
 
 def unzip_file():
     # 批量解压文件
@@ -23,6 +25,7 @@ def unzip_file():
     if os.path.exists(bakup_path):
         pass
     else:
+        print('创建备份目录')
         os.mkdir(bakup_path)
 
     if os.path.exists(unzip_path):
@@ -53,7 +56,7 @@ def unzip_file():
         newfilepath = filename.split(".",1)[0]
         newfilepath = os.path.join(filedir,newfilepath)
         # 解压后的目录
-        path_after = unzip_path +'/' + filename_real
+        path_after = unzip_path + '/' + filename_real
         if os.path.isdir(path_after): # 根据获取的压缩文件的文件名建立相应的文件夹
             pass
         else:
@@ -61,14 +64,67 @@ def unzip_file():
         for name in zip_file.namelist():# 解压文件
             zip_file.extract(name, path_after)
         zip_file.close()
-        Conf = os.path.join(newfilepath,'conf')
-        if os.path.exists(Conf):#如存在配置文件，则删除（需要删则删，不要的话不删）
-            shutil.rmtree(Conf)
         if os.path.exists(filepath):#删除原先压缩包
             os.remove(filepath)
         f_index.append(y)
         unzip_paths.append(path_after)
     return unzip_paths
+
+def simple_Unzip(whattoUnzip):
+    # 普通解压程序，适用于所有指定文件解压
+    filename_real = whattoUnzip.rsplit("/", 1)[1]
+    file_exact = filename_real.rsplit('.', 1)[0]
+    filepath = whattoUnzip.rsplit("/", 1)[0]
+    unzip_path = filepath + '/unzip'
+    if os.path.exists(unzip_path):
+        pass
+    else:
+        os.mkdir(unzip_path)
+    zip_file = zipfile.ZipFile(whattoUnzip)
+    newfilepath = whattoUnzip.split(".",1)[0]
+    newfilepath = os.path.join(filedir,newfilepath)
+    # 解压后的目录
+    path_after = unzip_path +'/' + file_exact
+    if os.path.isdir(path_after): # 根据获取的压缩文件的文件名建立相应的文件夹
+        pass
+    else:
+        os.mkdir(path_after)
+    for n, name in enumerate(zip_file.namelist()):# 解压文件
+        if '.jpg' or '.png' in str(name):
+            format = name.rsplit('.', 1)[1]
+            new_name = str(n+1) + 'a.' + format
+            zip_file.extract(name, path_after)
+            path_z = os.path.join(path_after, name)
+            path_n = os.path.join(path_after, new_name)
+            os.rename(path_z, path_n)
+        else:
+            continue
+    zip_file.close()
+    if os.path.exists(whattoUnzip):#删除原先压缩包
+        os.remove(whattoUnzip)
+    return path_after
+
+
+def fill_original():
+    # 选择文件并解压到指定源目录
+    filenames = askopenfilenames()
+    ori_dir = configuration.old_path
+    files_data = []
+    file_paths = []
+    if filenames is None:
+        pass
+    else:
+        for filename in filenames:
+            t = str(time.time()).replace('.', '')
+            filename_new = filename.rsplit("/", 1)[1]
+            copypath = ori_dir + '/' + filename_new
+            copyreal = ori_dir + '/' + str(t)
+            shutil.copy(filename, copyreal)
+            # 解压到指定目录
+            file_data = simple_Unzip(copyreal)
+            files_data.append((copypath, file_data))
+        return files_data
+
 
 
 def fill_data():
@@ -79,7 +135,7 @@ def fill_data():
     # file_paths = unziper.unzip_file()[1]
     file_datas = []
     file_paths = []
-    if filenames is None:
+    if filenames == '':
         pass
     else:
         for a, filepath in enumerate(filenames):
@@ -91,8 +147,9 @@ def fill_data():
     return files_data
 
 
-def del_cache():
+
+def del_pic_handle_cache():
+    # 清除缓存
     shutil.rmtree(bakup_path)
     shutil.rmtree(unzip_path)
-
 
