@@ -5,7 +5,9 @@ import os
 
 
 current_path = os.path.abspath(__file__)
-key_path = os.path.join((os.path.abspath(os.path.dirname(current_path) + os.path.sep + "..")), 'config.ini')
+# key_path = os.path.join((os.path.abspath(os.path.dirname(current_path) + os.path.sep + "..")), 'config.ini')
+key_path = os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))), 'config.ini')
+
 if os.path.exists(key_path):
     pass
 else:
@@ -65,6 +67,22 @@ new_path = pathKey.get('folder', 'new_path')
 # 用于去马赛克后的结果文件的存放路径
 target_path = pathKey.get('folder', 'target_path')
 
+# 下面这段配置为判断是否为壁纸的，暂没有用
+sizes = []
+size1 = [pathKey.get('size', 'size1_w'), pathKey.get('size', 'size1_h')]
+size2 = [pathKey.get('size', 'size2_w'), pathKey.get('size', 'size2_h')]
+size3 = [pathKey.get('size', 'size3_w'), pathKey.get('size', 'size3_h')]
+size4 = [pathKey.get('size', 'size4_w'), pathKey.get('size', 'size4_h')]
+size5 = [pathKey.get('size', 'size5_w'), pathKey.get('size', 'size5_h')]
+sizes.append(size1)
+sizes.append(size2)
+sizes.append(size3)
+sizes.append(size4)
+sizes.append(size5)
+# 读取目录
+pic_path = pathKey.get('folder', 'pic_path')
+save_path = pathKey.get('folder', 'save_path')
+
 def write_w(size_w):
     pathKey.set('size_modify', 'size_w', size_w)
     with open('config.ini', 'w', encoding='utf-8') as f:
@@ -83,4 +101,13 @@ def reload_config():
     pathKey.read(key_path, encoding='utf-8')
     reload_w = pathKey.get('size_modify', 'size_w')
     reload_h = pathKey.get('size_modify', 'size_h')
-    return  reload_w, reload_h
+    return reload_w, reload_h
+
+def reload_remsaic_workflow():
+    key_path = os.path.join((os.path.abspath(os.path.dirname(current_path) + os.path.sep + "..")), 'config.ini')
+    pathKey = ConfigParser()
+    pathKey.read(key_path, encoding='utf-8')
+    unzip_path = pathKey.get('folder', 'unzip_path')
+    old_path = pathKey.get('folder', 'old_path')
+    target_path = pathKey.get('folder', 'target_path')
+    return unzip_path, old_path, target_path

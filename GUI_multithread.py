@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import threading
+import time
 
 import ttkbootstrap as tk
 import shutil
@@ -22,22 +23,25 @@ pic_Path = configuration.pic_path
 save_Path = configuration.save_path
 pathKey = configuration.pathKey
 
-class Window:
+
+class GUI():
     button_list = []
     object_list = []
-    def __init__(self):
+    def __init__(self, root):
         '''创建窗口和frame'''
-        self.window = tk.Window()
-        self.window.title('Manga Handler')
-        self.window.geometry('960x840')
+        self.initGUI(root)
+
+    def initGUI(self, root):
+        root.title('Manga Handler')
+        root.geometry('960x840')
         # 定义欢迎界面的frame
-        self.frame_c = tk.Frame(self.window)
+        self.frame_c = tk.Frame(root)
         self.frame_c.place(x=460, y=350, anchor='center')
         self.frame_b = tk.Frame(self.frame_c)
         self.frame_b.pack(anchor='center', side='top')
         # 新建标签选项卡
         # 定义按钮操作栏的frame
-        self.framebtn = tk.Labelframe(self.window, text='图片缩放处理')
+        self.framebtn = tk.Labelframe(root, text='图片缩放处理')
         # Labelbtns = tk.Label(self.framebtn, background='cyan')
         # Labelbtns.pack(anchor='w')
         # 所有属于按钮操作栏的子frame
@@ -55,22 +59,24 @@ class Window:
         self.text = tk.StringVar()
         self.text1 = tk.StringVar()
         # 右侧列表操作栏
-        self.frame_listbox = tk.Frame(self.window)
+        self.frame_listbox = tk.Frame(root)
         self.ttframe = tk.LabelFrame(self.frame_listbox, text='修改图片起始页数')
         self.conframe = tk.Frame(self.ttframe)
         self.conframe.pack(anchor='center', side=BOTTOM, expand=True)
         # 按钮栏
         self.btns = tk.Frame(self.conframe)
-        self.btn_add = tk.Button(self.btns, text='添加文件', bootstyle=(SUCCESS, OUTLINE), command=self.fill_data)
+        self.btn_add = tk.Button(self.btns, text='添加文件', bootstyle=(SUCCESS, OUTLINE), command=self.t_file_handle)
         self.btn_unable_add = tk.Button(master=self.btns, text='添加文件', bootstyle=(SECONDARY, OUTLINE))
         self.btn_del = tk.Button(self.btns, text='清空列表', bootstyle=(DANGER, OUTLINE), command=self.emptyList)
+        self.btns.pack(side=RIGHT, expand=True, padx=10)
         self.btn_del.pack(side=RIGHT, padx=10)
+        self.btn_add.pack(side=RIGHT, padx=10)
         # 定义想要添加起始页数的文件
         self.file_datas = []
         self.text_file = tk.StringVar()
         self.labelNow = tk.Label(self.frame_listbox, textvariable=self.text_file, wraplength=500, justify='left')
         # 去码操作区
-        self.remosaicFrame = tk.Frame(self.window, width=77)
+        self.remosaicFrame = tk.Frame(root, width=77)
         # self.labeltemp = tk.Label(self.remosaicFrame, background='blue', width=77)
         # self.labeltemp.pack(side=TOP)
         self.remosaic_Label = tk.Labelframe(master=self.remosaicFrame, text='去马赛克处理')
@@ -80,18 +86,28 @@ class Window:
         # 定义去码信息列表
         self.rtv = tk.Treeview(master=self.label_remosaic, columns=[0, 1, 2, 3], show=HEADINGS, height=5)
         # 文件信息标签（去码路径）
-        self.original_root_r = tk.Label(self.remosaicFrame, textvariable=self.text_ori_root, justify='left', wraplength=865)
-        self.compare_root_r = tk.Label(self.remosaicFrame, textvariable=self.text_com_root, justify='left', wraplength=750)
+        self.original_root_r = tk.Label(self.remosaicFrame, textvariable=self.text_ori_root, justify='left',
+                                        wraplength=865)
+        self.compare_root_r = tk.Label(self.remosaicFrame, textvariable=self.text_com_root, justify='left',
+                                       wraplength=750)
         # UI交互
         self.btn_add_ori = tk.Button(master=self.remosaic_Label, text='添加源文件', command=self.fill_remosaic_data)
-        self.btn_unable_add_ori = tk.Button(master=self.remosaic_Label, text='添加源文件', bootstyle=(SECONDARY, OUTLINE))
+        self.btn_unable_add_ori = tk.Button(master=self.remosaic_Label, text='添加源文件',
+                                            bootstyle=(SECONDARY, OUTLINE))
         self.btn_add_com = tk.Button(master=self.remosaic_Label, text='添加对比文件', command=self.fill_compare_data)
-        self.btn_unable_add_com = tk.Button(master=self.remosaic_Label, text='添加对比文件', bootstyle=(SECONDARY, OUTLINE))
-        self.btn_remosaic = tk.Button(master=self.remosaic_Label, text='开始去码', command=self.multi_Remosaic)
+        self.btn_unable_add_com = tk.Button(master=self.remosaic_Label, text='添加对比文件',
+                                            bootstyle=(SECONDARY, OUTLINE))
+        self.btn_remosaic = tk.Button(master=self.remosaic_Label, text='开始去码', command=self.start_Remosiac)
         self.btn_unable_start_remosaic = tk.Button(master=self.remosaic_Label, text='开始去码',
-                                           bootstyle=(SECONDARY, OUTLINE))
-        self.btn_config_Remosaic_target = tk.Button(master=self.remosaic_Label, text='修改缓存路径(重启生效)', command=self.re_Modify)
+                                                   bootstyle=(SECONDARY, OUTLINE))
+        self.btn_config_Remosaic_target = tk.Button(master=self.remosaic_Label, text='修改缓存路径(重启生效)',
+                                                    command=self.re_Modify)
 
+        self.show_info()
+        try:
+            root.protocol('WM_DELETE_WINDOW', self.del_cache())
+        except:
+            print('程序已退出')
 
     def resize_pic(self):
         now_size = configuration.reload_config()
@@ -151,13 +167,21 @@ class Window:
         self.pic_handle()
         self.file_handle()
         self.remosaic()
+        root.mainloop()
 
     def file_handle(self):
         # 按钮们
         self.file_form()
-        self.btns.pack(side=RIGHT, expand=True, padx=10)
-        self.btn_add = tk.Button(self.btns, text='添加文件', bootstyle=(SUCCESS, OUTLINE), command=self.fill_data)
-        self.btn_add.pack(side=RIGHT, padx=10)
+
+    def t_file_handle(self):
+        T = threading.Thread(target=self.fill_data)
+        x = self.tv.get_children()
+        print(x)
+        if str(x) != '()':
+            self.btn_add.destroy()
+            self.btn_unable_add = tk.Button(master=self.btns, text='添加文件', bootstyle=(SECONDARY, OUTLINE))
+            self.btn_unable_add.pack(side=RIGHT, padx=10)
+        T.start()
 
     def remosaic(self):
         # 定义列表表头
@@ -190,6 +214,13 @@ class Window:
         tree_head_root = '文件路径'
         tree_head_count = '起始页数'
         tree_head_control = '预留'
+        table_data = [
+            ("South Island, New Zealand", 1, 1),
+            ("Paris", 1,2),
+            ("Bora Bora", 1, 3),
+            ("Maui", 1, 4),
+            ("Tahiti", 1, 5),
+        ]
         # 定义列表格式
         self.ttframe.pack(pady=5, fill=X, side=TOP)
         self.tv = tk.Treeview(master=self.ttframe, columns=[0, 1, 2, 3], show=HEADINGS, height=10)
@@ -230,9 +261,6 @@ class Window:
         if len(self.file_datas) == 0:
             pass
         else:
-            self.btn_add.destroy()
-            self.btn_unable_add = tk.Button(master=self.btns, text='添加文件', bootstyle=(SECONDARY, OUTLINE))
-            self.btn_unable_add.pack(side=RIGHT, padx=10)
             return self.f_paths
 
     def fill_remosaic_data(self):
@@ -356,6 +384,8 @@ class Window:
                 self.btn_add_com.pack(side=RIGHT, padx=10)
                 self.btn_add_com.pack(side=RIGHT, padx=10)
 
+
+
     def updateItem(self, event):
         # 更新列表中的起始页数
         for item in self.tv.selection():
@@ -421,12 +451,8 @@ class Window:
             item_text_re = self.rtv.item(item, 'value')
             list_index = int(item_text_re[0])-1
             filename = self.original_folder_names[list_index].rsplit('.', 1)[0]
-            remosaic_Status = item_text_re[3]
             target_Path = targetpath + '/' + filename
-            if remosaic_Status == '未运行':
-                pass
-            elif remosaic_Status == '运行完毕':
-                os.startfile(target_Path)
+            os.startfile(target_Path)
 
     def open_Unzip_dir(self, event):
         # 打开目标路径
@@ -435,30 +461,22 @@ class Window:
             root_ori = self.item_text_unzip[1]
             os.startfile(root_ori)
 
-    def multi_Remosaic(self):
-        # 多线程处理去码
-        T = threading.Thread(target=self.start_Remosiac)
-        T.start()
 
     def start_Remosiac(self):
         targetpath = reload.reloadconfig()
-        remosaic_com = ''
-        remosaic_index = ''
-        remosaic_statusx = ''
         for item in self.rtv.selection():
             remosaic_data= self.rtv.item(item, 'value')
             if remosaic_data[2] == '/':
                 continue
             else:
                 # 从列表获取源路径和对比路径
-                remosaic_statusx = str(remosaic_data[3])
                 remosaic_index = int(remosaic_data[0])
                 remosaic_ori = self.files_data_real[remosaic_index-1]
                 remosaic_com = remosaic_data[2]
-
                 # 计算出解压路径
                 filepath = str(remosaic_ori).rsplit('/', 1)[1]
                 realname = self.original_folder_names[remosaic_index-1]
+
                 target_Path = targetpath + '/' + filepath
                 real_path = targetpath + '/' + realname.rsplit('.', 1)[0]
                 # print(remosaic_ori)
@@ -466,15 +484,6 @@ class Window:
                 # print(real_path)
                 remove_mosaic.GUI_use_Remosaic(remosaic_ori, remosaic_com, target_Path)
                 os.rename(target_Path, real_path)
-
-        # 运行完毕后更新状态
-        for row_id in self.rtv.get_children():
-            item_tree = self.rtv.item(row_id)
-            if remosaic_com in item_tree['values']:
-                item_tree['values'] = (item_tree['values'][0], item_tree['values'][1], item_tree['values'][2], '运行完毕')
-                self.rtv.item(row_id, **item_tree)
-
-
 
     def pic_handle(self):
         self.text.set('当前图片路径：%s' % filepath)
@@ -502,19 +511,6 @@ class Window:
         self.size_Enter_h.insert(0, config_h)
         self.size_Enter_h.pack(anchor='center', side=RIGHT, padx=2)
 
-    def new_button(self):
-        '''创建展示按钮'''"开始检测和显示结果可在此处新添加tk.button"
-        self.startbtn = tk.Button(self.frame_b, text='欢迎使用', width=10, bootstyle=PRIMARY,
-                  command=self.show_info).pack()
-
-    def run(self):
-        '''主程序调用'''
-        self.window.mainloop()
-        try:
-            self.window.protocol('WM_DELETE_WINDOW', self.del_cache())
-        except:
-            print('程序已退出')
-
     def del_cache(self):
         # 删除去码文件缓存
         ori_dir = configuration.old_path
@@ -525,6 +521,5 @@ class Window:
 
 
 if __name__ == '__main__':
-    w = Window()
-    w.new_button()
-    w.run()
+    root = tk.Window()
+    myGUI = GUI(root)

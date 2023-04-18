@@ -1,11 +1,12 @@
 import shutil
-
+import zipfile
 from PIL import Image
 import os
-import main
+from utils import configuration
 import glob
 picdir = "C:/Users/Administrator/Desktop/manga/2/temp"
 savedir = "C:/Users/Administrator/Desktop/manga/2/tempsave"
+ori_dir = "C:/Users/Administrator/Desktop/bavel02_mproj/images"
 
 
 def movePic(pic, saveDir, target_size):   # 设置宽为210像素，高为425像素(对应宽5.5cm,高11cm)
@@ -54,10 +55,35 @@ def multi(picdir,savedir):
     print("共有%s 个文件"% i)
 
     for z, picture in enumerate(pic_list):
-        movePic(picture, savedir, main.sizes)
+        movePic(picture, savedir, configuration.sizes)
+
+def multimove():
+    dirs = os.listdir(ori_dir)
+    wow = []
+    for dirname in dirs:
+        name = dirname + '.zip'
+        fullname = os.path.join(ori_dir, name)
+        zip_File = zipfile.ZipFile(fullname, 'w')
+        for dir, dir_abs, files in os.walk(ori_dir):
+            for file in files:
+                if not dirname.endswith('.png') and not dirname.endswith('.jpg'):
+                    if dirname in file:
+                        o_path = os.path.join(dir, file)
+                        wow.append(file)
+                        zip_File.write(o_path, compress_type=zipfile.ZIP_DEFLATED, arcname=file, )
+        zip_File.close()
+        if os.path.getsize(fullname) < 100000:
+            os.remove(fullname)
 
 
+                        # try:
+                        #
+                        #     zip_File.write(o_path, compress_type=zipfile.ZIP_DEFLATED)
+                        #     zip_File.close()
+                        # except:
+                        #     continue
 
 
 if __name__ == '__main__':
-    multi(picdir, savedir)
+    # multi(picdir, savedir)
+    multimove()
